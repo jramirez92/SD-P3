@@ -21,7 +21,7 @@ def seleccionarHabitacion(id, response):
     :return: Habitación coincidente con ID
     """
 
-    target = registry.get(id)
+    target = registry.get(int(id))
     if target is None:
         response.status = 404
         response.body = f'La habitación {id} no está registrada en el sistema.'
@@ -65,8 +65,12 @@ def getHabitacion(id):
     si no response code 404
     """
 
-    # TO-DO : ISSUE 10 #
-    pass
+    target = seleccionarHabitacion(id, response)
+
+    if target is None:
+        return response
+    else:
+        return dumps(target.__dict__)
 
 
 @get('/')
