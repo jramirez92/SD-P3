@@ -5,6 +5,7 @@ from room import Room
 """ Listado de todas las habitaciones registradas """
 registry = {1: Room(2, ['Frigorífico'])}
 
+
 def seleccionarHabitacion(id, response):
     """
     Selecciona la habitación correspondiente  la variable id
@@ -12,8 +13,6 @@ def seleccionarHabitacion(id, response):
     Busca una habitación en el registro con esa id, si existe la devuelve, si no
     existe modifica la response de la función de nivel superior con status
     404 y un mensaje informativo y devuelve None
-
-    @author Javier Ramírez Domínguez
 
     :param id: Identificador único de la habitación.
     :type id: int
@@ -29,6 +28,7 @@ def seleccionarHabitacion(id, response):
         return None
     else:
         return target
+
 
 @post('/')
 def altaHabitacion():
@@ -50,6 +50,7 @@ def altaHabitacion():
     # TO DO : ISSUE 7 #
     pass
 
+
 @get('/<id>')
 def getHabitacion(id):
     """ Obtiene una habitación por su id.
@@ -67,6 +68,7 @@ def getHabitacion(id):
     # TO-DO : ISSUE 10 #
     pass
 
+
 @get('/')
 def getAll():
     """ Devuelve un listado con todas las habitaciones.
@@ -80,7 +82,8 @@ def getAll():
     # TO-DO : ISSUE 9 #
     pass
 
-@put('/<id:int>')
+
+@put('/<id:int>/equipamiento/modificar')
 def modificarHabitacion(id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.
@@ -103,7 +106,7 @@ def modificarHabitacion(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionarHabitacion(id,response)
+    target = seleccionarHabitacion(id, response)
 
     if target is None:
         return response
@@ -113,7 +116,7 @@ def modificarHabitacion(id):
         return dumps(target.__dict__)
 
 
-@put('/<id:int>/add')
+@put('/<id:int>/equipamiento/add')
 def addEquipamiento(id):
     """ Añade el nuevo o nuevos equipamiento a la 
     habitación.
@@ -137,7 +140,7 @@ def addEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionarHabitacion(id,response)
+    target = seleccionarHabitacion(id, response)
 
     if target is None:
         return response
@@ -151,8 +154,7 @@ def addEquipamiento(id):
         return dumps(target.__dict__)
 
 
-
-@put('/<id>/del_equipment')
+@put('/<id:int>/equipamiento/eliminar')
 def delEquipamiento(id):
     """ Elimina el equipamiento contenido en la lista 
     recibida de la habitación.
@@ -175,8 +177,40 @@ def delEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    # TO-DO : ISSUE 8 #
-    pass
+    target = seleccionarHabitacion(id, response)
+
+    if target is None:
+        return response
+    else:
+        data = request.json['equipamiento']
+        for e in data:
+            try:
+                target.equipamiento.remove(e)
+            except ValueError:
+                pass
+
+        return dumps(target.__dict__)
+
+@put('/<id:int>/plazas')
+def modificarPlazas(id):
+    """Modifica el número de plazas de la habitación
+
+    :param id: Identificador único de la habitación.
+    :param plazas: JSON con el nuevo número de plazas
+    :returns Objeto modificado por JSON
+    """
+
+    target = seleccionarHabitacion(id,response)
+    if target is None:
+        return response
+    else:
+        try:
+            target.plazas = request.json['plazas']
+            return dumps(target.__dict__)
+        except KeyError:
+            response.status = 400
+            response.body = f'No se ha indicado el nuevo número de plazas para habitación {id}.'
+            return response
 
 
 if __name__ == "__main__":
