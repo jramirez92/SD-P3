@@ -8,10 +8,8 @@ class Room:
     def __init__(self, plazas, equipamiento):
         """ Constructor Parametrizado de Room
 
-        Parameters
-        ---------
-        plazas: número máximo de ocupantes que pueden alojarse.
-        equipamiento: lista con todos los servicios.
+        :param plazas: número máximo de ocupantes que pueden alojarse.
+        :param equipamiento: lista con todos los servicios.
         """
 
         Room.id = Room.id + 1 # Aumentamos en 1 el último ID
@@ -28,10 +26,7 @@ class Room:
         Comprueba que la habitación esté disponible y modifica su atributo
         disponible a True
 
-        Raises
-        ------
-        Exception
-            Notifica que la habitación ya está ocupada.
+        :raises Exception: Notifica que la habitación ya está ocupada.
         """
 
         if not self.disponible:
@@ -45,10 +40,7 @@ class Room:
         Comprueba que la habitación esté ocupada y modifica su atributo
         disponible a True
 
-        Raises
-        -----
-        Exception
-            Notifica que la habitación no está ocupada
+        :raises Exception: Notifica que la habitación no está ocupada
         """
 
         if self.disponible:
