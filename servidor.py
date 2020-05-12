@@ -1,7 +1,10 @@
 from bottle import run, request, response, HTTPResponse, get, post, put
+from json import dumps
+from room import Room
 
 """ Listado de todas las habitaciones registradas """
-habitaciones = []
+registry = {1: Room(2, ['Frigorífico'])}
+
 
 @post('/')
 def altaHabitacion():
@@ -53,7 +56,7 @@ def getAll():
     # TO-DO : ISSUE 9 #
     pass
 
-@put('/<id>')
+@put('/<id:int>')
 def modificarHabitacion(id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.
@@ -76,8 +79,21 @@ def modificarHabitacion(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    # TO DO : ISSUE 8 #
-    pass
+    data = request.json
+    target = registry.get(id)
+
+    if target is None:
+        response.status = 404
+        response.body = f'La habitación con id {id} no está registrada en el sistema'
+        return response
+    elif not data['equipamiento']:
+        response.status = 400
+        response.body = 'No se ha encontrado el la clave equipamiento en los datos.'
+        return response
+    else:
+        target.equipamiento = data['equipamiento'].copy()
+        response.status = 200
+        return dumps(target.__dict__)
 
 
 @put('/<id>/add_eqipment')
@@ -134,7 +150,5 @@ def delEquipamiento(id):
     pass
 
 
-
-
-
-run(host='localhost', port=8080)
+if __name__ == "__main__":
+    run(host='localhost', port=8080)
