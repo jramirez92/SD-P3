@@ -5,6 +5,30 @@ from room import Room
 """ Listado de todas las habitaciones registradas """
 registry = {1: Room(2, ['Frigorífico'])}
 
+def seleccionarHabitacion(id, response):
+    """
+    Selecciona la habitación correspondiente  la variable id
+
+    Busca una habitación en el registro con esa id, si existe la devuelve, si no
+    existe modifica la response de la función de nivel superior con status
+    404 y un mensaje informativo y devuelve None
+
+    @author Javier Ramírez Domínguez
+
+    :param id: Identificador único de la habitación.
+    :type id: int
+    :param response: Respuesta que se va a enviar al cliente
+    :type response: Bottle Response
+    :return: Habitación coincidente con ID
+    """
+
+    target = registry.get(id)
+    if target is None:
+        response.status = 404
+        response.body = f'La habitación {id} no está registrada en el sistema.'
+        return None
+    else:
+        return target
 
 @post('/')
 def altaHabitacion():
@@ -79,24 +103,17 @@ def modificarHabitacion(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    data = request.json
-    target = registry.get(id)
+    target = seleccionarHabitacion(id,response)
 
     if target is None:
-        response.status = 404
-        response.body = f'La habitación con id {id} no está registrada en el sistema'
-        return response
-    elif not data['equipamiento']:
-        response.status = 400
-        response.body = 'No se ha encontrado el la clave equipamiento en los datos.'
         return response
     else:
-        target.equipamiento = data['equipamiento'].copy()
-        response.status = 200
+        data = request.json['equipamiento']
+        target.equipamiento = data.copy()
         return dumps(target.__dict__)
 
 
-@put('/<id>/add_eqipment')
+@put('/<id:int>/add')
 def addEquipamiento(id):
     """ Añade el nuevo o nuevos equipamiento a la 
     habitación.
@@ -120,8 +137,20 @@ def addEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    # TO-DO : ISSUE 8 #
-    pass
+    target = seleccionarHabitacion(id,response)
+
+    if target is None:
+        return response
+    else:
+        data = request.json['equipamiento']
+        for e in data:
+            if e not in target.equipamiento:
+                target.equipamiento.append(e)
+
+        response.status = 200
+        return dumps(target.__dict__)
+
+
 
 @put('/<id>/del_equipment')
 def delEquipamiento(id):
