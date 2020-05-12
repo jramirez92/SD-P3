@@ -28,7 +28,45 @@ def seleccionarHabitacion(id, response):
         return None
     else:
         return target
+def habitacionesOcupadas(serializar=False):
+    """ Devuelve la lista de las habitaciones ocupadas
 
+    :param serializar: Si es True devolverá los diccionarios
+    de los objetos para que puedan ser serializados para su
+    transmisión.
+
+    :returns Lista de las habitaciones ocupadas"""
+
+    ocupadas = {}
+
+    for key in registry:
+        if not registry[key].disponible:
+            if serializar:
+                ocupadas[key] = registry[key].__dict__
+            else:
+                ocupadas[key] = registry[key]
+
+    return ocupadas
+
+def habitacionesDisponibles(serializar=False):
+    """ Devuelve la lista de las habitaciones disponibles
+
+    :param serializar: Si es True devolverá los diccionarios
+    de los objetos para que puedan ser serializados para su
+    transmisión.
+
+    :returns Lista de las habitaciones disponibles"""
+
+    disponibles = {}
+
+    for key in registry:
+        if registry[key].disponible:
+            if serializar:
+                disponibles[key] = registry[key].__dict__
+            else:
+                disponibles[key] = registry[key]
+
+    return disponibles
 
 @post('/')
 def altaHabitacion():
@@ -89,6 +127,23 @@ def getAll():
     response.content_type = "application/json"
     return dumps(json_registry)
 
+@get('/ocupadas')
+def getOcupadas():
+    """Obtiene un listado de todas las habitaciones ocupadas
+
+    :returns Listado de habitacones ocupadas en JSON"""
+
+    response.content_type = "application/json"
+    return habitacionesOcupadas(True)
+
+@get('/disponibles')
+def getDisponibles():
+    """ Obtiene un listado de todas las habitaciones ocupadas.
+
+    :returns Listado de habitaciones disponibles en JSON"""
+
+    response.content_type = "application/json"
+    return habitacionesDisponibles(True)
 
 @put('/<id:int>/equipamiento/modificar')
 def modificarEquipamiento(id):
