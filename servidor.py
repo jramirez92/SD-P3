@@ -83,8 +83,11 @@ def getAll():
     ninguna response code 204.
     """
 
-    # TO-DO : ISSUE 9 #
-    pass
+    json_registry = {}
+    for key in registry:
+        json_registry[key] = registry[key].__dict__
+    response.content_type = "application/json"
+    return dumps(json_registry)
 
 
 @put('/<id:int>/equipamiento/modificar')
@@ -117,6 +120,7 @@ def modificarEquipamiento(id):
     else:
         data = request.json['equipamiento']
         target.equipamiento = data.copy()
+        response.content_type = "application/json"
         return dumps(target.__dict__)
 
 
@@ -155,6 +159,7 @@ def addEquipamiento(id):
                 target.equipamiento.append(e)
 
         response.status = 200
+        response.content_type = "application/json"
         return dumps(target.__dict__)
 
 
@@ -193,6 +198,7 @@ def eliminarEquipamiento(id):
             except ValueError:
                 pass
 
+        response.content_type = "application/json"
         return dumps(target.__dict__)
 
 @get('/<id:int>/plazas')
@@ -224,6 +230,7 @@ def modificarPlazas(id):
     else:
         try:
             target.plazas = request.json['plazas']
+            response.content_type = "application/json"
             return dumps(target.__dict__)
         except KeyError:
             response.status = 400
