@@ -84,7 +84,7 @@ def getAll():
 
 
 @put('/<id:int>/equipamiento/modificar')
-def modificarHabitacion(id):
+def modificarEquipamiento(id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.
     
@@ -155,7 +155,7 @@ def addEquipamiento(id):
 
 
 @put('/<id:int>/equipamiento/eliminar')
-def delEquipamiento(id):
+def eliminarEquipamiento(id):
     """ Elimina el equipamiento contenido en la lista 
     recibida de la habitación.
 
@@ -190,6 +190,20 @@ def delEquipamiento(id):
                 pass
 
         return dumps(target.__dict__)
+
+@get('/<id:int>/plazas')
+def getPlazas(id):
+    """Devuelve el número de plazas de la habitación
+
+    :param id: Identificador único de la habitación
+    :returns Número de plazas de la habitación."""
+
+    target = seleccionarHabitacion(id,response)
+
+    if target is None:
+        return response
+    else:
+        return target.plazas
 
 @put('/<id:int>/plazas')
 def modificarPlazas(id):
