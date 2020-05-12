@@ -14,11 +14,10 @@ class Room:
         equipamiento: lista con todos los servicios.
         """
 
-        nonlocal id # ID estática de la clase
-        id = id + 1 # Aumentamos en 1 el último ID
+        Room.id = Room.id + 1 # Aumentamos en 1 el último ID
 
         # Inicialiación de los atributos del objeto.
-        self.id = id
+        self.id = Room.id
         self.plazas = plazas
         self.equipamiento = equipamiento.copy()
         self.disponible = True
