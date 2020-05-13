@@ -6,7 +6,7 @@ from room import Room
 registry = {1: Room(2, ['Frigorífico'])}
 
 
-def seleccionarHabitacion(id, response):
+def seleccionar_habitacion(id, response):
     """
     Selecciona la habitación correspondiente  la variable id
 
@@ -28,7 +28,9 @@ def seleccionarHabitacion(id, response):
         return None
     else:
         return target
-def habitacionesOcupadas(serializar=False):
+
+
+def habitaciones_ocupadas(serializar=False):
     """ Devuelve la lista de las habitaciones ocupadas
 
     :param serializar: Si es True devolverá los diccionarios
@@ -48,7 +50,8 @@ def habitacionesOcupadas(serializar=False):
 
     return ocupadas
 
-def habitacionesDisponibles(serializar=False):
+
+def habitaciones_disponibles(serializar=False):
     """ Devuelve la lista de las habitaciones disponibles
 
     :param serializar: Si es True devolverá los diccionarios
@@ -68,8 +71,9 @@ def habitacionesDisponibles(serializar=False):
 
     return disponibles
 
+
 @post('/')
-def altaHabitacion():
+def alta_habitacion():
     """ Añade una nueva habitación al Servidor
 
     Se reciben por JSON el valor del atributo
@@ -85,12 +89,21 @@ def altaHabitacion():
 
     """
 
-    # TO DO : ISSUE 7 #
-    pass
+    data = request.json
+    try:
+        habitacion = Room(data['plazas'], data['equipamiento'])
+        registry[habitacion.id] = habitacion
+        response.content_type = "application/json"
+        response.body = dumps(habitacion.__dict__)
+        return response
+
+    except KeyError:
+        response.status = 400
+        response.body = 'La petición no incluye todos los elementos requeridos.'
 
 
 @get('/<id>')
-def getHabitacion(id):
+def get_habitacion(id):
     """ Obtiene una habitación por su id.
 
     Parameters
@@ -103,7 +116,7 @@ def getHabitacion(id):
     si no response code 404
     """
 
-    target = seleccionarHabitacion(id, response)
+    target = seleccionar_habitacion(id, response)
 
     if target is None:
         return response
@@ -112,7 +125,7 @@ def getHabitacion(id):
 
 
 @get('/')
-def getAll():
+def get_all():
     """ Devuelve un listado con todas las habitaciones.
 
     Response
@@ -128,25 +141,25 @@ def getAll():
     return dumps(json_registry)
 
 @get('/ocupadas')
-def getOcupadas():
+def get_ocupadas():
     """Obtiene un listado de todas las habitaciones ocupadas
 
     :returns Listado de habitacones ocupadas en JSON"""
 
     response.content_type = "application/json"
-    return habitacionesOcupadas(True)
+    return habitaciones_ocupadas(True)
 
 @get('/disponibles')
-def getDisponibles():
+def get_disponibles():
     """ Obtiene un listado de todas las habitaciones ocupadas.
 
     :returns Listado de habitaciones disponibles en JSON"""
 
     response.content_type = "application/json"
-    return habitacionesDisponibles(True)
+    return habitaciones_disponibles(True)
 
 @put('/<id:int>/equipamiento/modificar')
-def modificarEquipamiento(id):
+def modificar_equipamiento(id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.
     
@@ -168,7 +181,7 @@ def modificarEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionarHabitacion(id, response)
+    target = seleccionar_habitacion(id, response)
 
     if target is None:
         return response
@@ -180,7 +193,7 @@ def modificarEquipamiento(id):
 
 
 @put('/<id:int>/equipamiento/add')
-def addEquipamiento(id):
+def add_equipamiento(id):
     """ Añade el nuevo o nuevos equipamiento a la 
     habitación.
 
@@ -203,7 +216,7 @@ def addEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionarHabitacion(id, response)
+    target = seleccionar_habitacion(id, response)
 
     if target is None:
         return response
@@ -219,7 +232,7 @@ def addEquipamiento(id):
 
 
 @put('/<id:int>/equipamiento/eliminar')
-def eliminarEquipamiento(id):
+def eliminar_equipamiento(id):
     """ Elimina el equipamiento contenido en la lista 
     recibida de la habitación.
 
@@ -241,7 +254,7 @@ def eliminarEquipamiento(id):
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionarHabitacion(id, response)
+    target = seleccionar_habitacion(id, response)
 
     if target is None:
         return response
@@ -257,13 +270,13 @@ def eliminarEquipamiento(id):
         return dumps(target.__dict__)
 
 @get('/<id:int>/plazas')
-def getPlazas(id):
+def get_plazas(id):
     """Devuelve el número de plazas de la habitación
 
     :param id: Identificador único de la habitación
     :returns Número de plazas de la habitación."""
 
-    target = seleccionarHabitacion(id,response)
+    target = seleccionar_habitacion(id, response)
 
     if target is None:
         return response
@@ -271,7 +284,7 @@ def getPlazas(id):
         return target.plazas
 
 @put('/<id:int>/plazas')
-def modificarPlazas(id):
+def modificar_plazas(id):
     """Modifica el número de plazas de la habitación
 
     :param id: Identificador único de la habitación.
@@ -279,7 +292,7 @@ def modificarPlazas(id):
     :returns Objeto modificado por JSON
     """
 
-    target = seleccionarHabitacion(id,response)
+    target = seleccionar_habitacion(id, response)
     if target is None:
         return response
     else:
