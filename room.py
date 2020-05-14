@@ -5,7 +5,7 @@ class Room:
     id = 0  # Variable Estática que indica el último número de indetificación asignado.
 
 
-    def __init__(self, plazas, equipamiento):
+    def __init__(self, plazas, equipamiento, precio=10):
         """ Constructor Parametrizado de Room
 
         :param plazas: número máximo de ocupantes que pueden alojarse.
@@ -18,6 +18,7 @@ class Room:
         self.id = Room.id
         self.plazas = plazas
         self.equipamiento = equipamiento.copy()
+        self.precio = precio
         self.disponible = True
 
     def ocupar(self):

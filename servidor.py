@@ -77,21 +77,24 @@ def alta_habitacion():
     """ Añade una nueva habitación al Servidor
 
     Se reciben por JSON el valor del atributo
-    plazas y una lista con el equipamiento.
+    plazas, una lista con el equipamiento
+    y el precio por noche de la habitacion.
 
     Parameters
     ----------
     plazas: Número de personas que pueden dormir.
-    equipamiento: Lista con los extras de la habitaciñon.
+    equipamiento: Lista con los extras de la habitación.
+    precio: Precio de la habitación.
 
     Response
     --------
-
+    Si crea la habitacion response code 200,
+    si no response code 400
     """
 
     data = request.json
     try:
-        habitacion = Room(data['plazas'], data['equipamiento'])
+        habitacion = Room(data['plazas'], data['equipamiento'], data['precio'])
         registry[habitacion.id] = habitacion
         response.content_type = "application/json"
         response.body = dumps(habitacion.__dict__)
@@ -305,6 +308,27 @@ def modificar_plazas(id):
             response.body = f'No se ha indicado el nuevo número de plazas para habitación {id}.'
             return response
 
+@put('/<id:int>/precio')
+def modificar_precio(id):
+    """Modifica el precio por noche de la habitación
+
+    :param id: Identificador único de la habitación.
+    :param precio: JSON con el precio nuevo
+    :returns Objeto modificado por JSON
+    """
+
+    target = seleccionar_habitacion(id, response)
+    if target is None:
+        return response
+    else:
+        try:
+            target.precio = request.json['precio']
+            response.content_type = "application/json"
+            return dumps(target.__dict__)
+        except KeyError:
+            response.status = 400
+            response.body = f'No se ha indicado el nuevo precio para la habitación {id}.'
+            return response
 
 if __name__ == "__main__":
     run(host='localhost', port=8080)
