@@ -1,6 +1,7 @@
 from bottle import run, request, response, HTTPResponse, get, post, put
 from json import dumps
 from room import Room
+from os import remove
 
 """ Listado de todas las habitaciones registradas """
 registry = {1: Room(2, ['Frigorífico'])}
@@ -98,11 +99,59 @@ def alta_habitacion():
         registry[habitacion.id] = habitacion
         response.content_type = "application/json"
         response.body = dumps(habitacion.__dict__)
+
+        file = open("ArchivosServidor/Habitacion"+habitacion.id.__str__()+".txt", "w")
+        file.write("Habitacion ID: " + habitacion.id.__str__()+"\n")
+        file.write("Numero de plazas: " + habitacion.plazas.__str__()+"\n")
+        file.write("Equipamiento: "+"\n")
+        for line in habitacion.equipamiento:
+            file.write("    "+line+"\n")
+        file.write("Precio: " + habitacion.precio.__str__())
+        file.close()
+
         return response
 
     except KeyError:
         response.status = 400
         response.body = 'La petición no incluye todos los elementos requeridos.'
+
+@get('/<id>')
+def borrar_habitacion(id, response):
+    """
+    Selecciona la habitación correspondiente  la variable id
+
+    Busca una habitación en el registro con esa id, si existe y esta
+    desocupada la borra. Si no existe o existe pero esta ocupada
+    modifica la response de la función de nivel superior con status
+    404 o 400 respectivamente y un mensaje informativo, devuelve None
+
+    :param id: Identificador único de la habitación.
+    :type id: int
+    :param response: Respuesta que se va a enviar al cliente
+    :type response: Bottle Response
+
+    Response
+    --------
+    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    """
+
+    target = seleccionar_habitacion(id, response)
+    if target is None:
+        response.status = 404
+        response.body = f'La habitación {id} no está registrada en el sistema.'
+        return None
+    else:
+        if target.disponible:
+            remove("ArchivosServidor/Habitacion"+target.id.__str__())
+            registry.popitem(target)
+            response.status = 200
+            response.body = f'La habitación {id} ha sido borrada del sistema.'
+            return response
+        else:
+            response.status = 400
+            response.body = f'La habitacion {id} esta ocupada.'
+            return None
+
 
 
 @get('/<id>')

@@ -57,4 +57,3 @@ class Test(TestCase):
         self.assertEqual(r.json()['plazas'], self.plazas5)
         self.assertEqual(r.json()['equipamiento'], self.equipamiento5)
         self.assertEqual(r.json()['precio'],self.precio5)
-
