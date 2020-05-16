@@ -1,8 +1,0 @@
-Habitacion ID: 2
-Numero de plazas: 4
-Equipamiento: 
-    Aire Acondicionado
-    Televisión
-    Minibar
-    Terraza
-Precio: 30

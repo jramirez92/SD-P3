@@ -57,3 +57,21 @@ class Test(TestCase):
         self.assertEqual(r.json()['plazas'], self.plazas5)
         self.assertEqual(r.json()['equipamiento'], self.equipamiento5)
         self.assertEqual(r.json()['precio'],self.precio5)
+
+    def test_borrar_habitacion(self):
+        r = requests.get(Test.BASE+'delete/2')
+
+    def test_borrar_habitacion_borrada(self):
+        r = requests.get(Test.BASE+'delete/2')
+
+    def test_borrar_habitacion_ocupada_1(self):
+        r = requests.get(Test.BASE + 'ocupar/3')
+
+    def test_borrar_habitacion_ocupada_2(self):
+        r = requests.get(Test.BASE+'delete/3')
+
+    def test_borrar_habitacion_ocupada_3(self):
+        r = requests.get(Test.BASE+'liberar/3')
+
+    def test_borrar_habitacion_ocupada_4(self):
+        r = requests.get(Test.BASE+'delete/3')

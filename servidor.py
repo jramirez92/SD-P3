@@ -4,7 +4,7 @@ from room import Room
 from os import remove
 
 """ Listado de todas las habitaciones registradas """
-registry = {1: Room(2, ['Frigorífico'])}
+registry = {}
 
 
 def seleccionar_habitacion(id, response):
@@ -115,8 +115,8 @@ def alta_habitacion():
         response.status = 400
         response.body = 'La petición no incluye todos los elementos requeridos.'
 
-@get('/<id>')
-def borrar_habitacion(id, response):
+@get('/delete/<id>')
+def borrar_habitacion(id):
     """
     Selecciona la habitación correspondiente  la variable id
 
@@ -139,20 +139,88 @@ def borrar_habitacion(id, response):
     if target is None:
         response.status = 404
         response.body = f'La habitación {id} no está registrada en el sistema.'
-        return None
+        return response
     else:
-        if target.disponible:
-            remove("ArchivosServidor/Habitacion"+target.id.__str__())
-            registry.popitem(target)
+        if target.disponible == True:
+            remove("ArchivosServidor/Habitacion"+target.id.__str__()+".txt")
+            del registry[target.id]
             response.status = 200
             response.body = f'La habitación {id} ha sido borrada del sistema.'
             return response
         else:
             response.status = 400
             response.body = f'La habitacion {id} esta ocupada.'
-            return None
+            return response
 
+@get('/ocupar/<id>')
+def ocupar_habitacion(id):
+    """ Ocupa una habitación por su id.
 
+    Busca una habitación en el registro con esa id, si existe y esta
+    desocupada la ocupa. Si no existe o existe pero esta ocupada
+    modifica la response de la función de nivel superior con status
+    404 o 400 respectivamente y un mensaje informativo, devuelve None
+
+    :param id: Identificador único de la habitación.
+    :type id: int
+    :param response: Respuesta que se va a enviar al cliente
+    :type response: Bottle Response
+
+    Response
+    --------
+    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    """
+
+    target = seleccionar_habitacion(id, response)
+    if target is None:
+        response.status = 404
+        response.body = f'La habitación {id} no está registrada en el sistema.'
+        return response
+    else:
+        if target.disponible == True:
+            target.ocupar()
+            response.status = 200
+            response.body = f'La habitación {id} ha sido ocupada.'
+            return response
+        else:
+            response.status = 400
+            response.body = f'La habitacion {id} esta ocupada.'
+            return response
+
+@get('/liberar/<id>')
+def liberar_habitacion(id):
+    """ Libera una habitación por su id.
+
+    Busca una habitación en el registro con esa id, si existe y esta
+    ocupada la libera. Si no existe o existe pero esta desocupada
+    modifica la response de la función de nivel superior con status
+    404 o 400 respectivamente y un mensaje informativo, devuelve None
+
+    :param id: Identificador único de la habitación.
+    :type id: int
+    :param response: Respuesta que se va a enviar al cliente
+    :type response: Bottle Response
+
+    Response
+    --------
+    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    """
+
+    target = seleccionar_habitacion(id, response)
+    if target is None:
+        response.status = 404
+        response.body = f'La habitación {id} no está registrada en el sistema.'
+        return response
+    else:
+        if target.disponible == False:
+            target.liberar()
+            response.status = 200
+            response.body = f'La habitación {id} ha sido liberada.'
+            return response
+        else:
+            response.status = 400
+            response.body = f'La habitacion {id} esta desocupada.'
+            return response
 
 @get('/<id>')
 def get_habitacion(id):
