@@ -1,5 +1,5 @@
-from bottle import run, request, response, HTTPResponse, get, post, put
-from json import dumps
+from bottle import run, request, response, delete, get, post, put
+from json import dumps, load
 from room import Room
 from os import remove, path, mkdir
 import logging
@@ -74,6 +74,39 @@ def habitaciones_disponibles(serializar=False):
     return disponibles
 
 
+def update(id):
+    """ Hace persistente cualquier modificación en una habitación.
+
+    Se busca la habitación por su ID en el registro, si no encuentra
+    ninguna habitación busca en los fichero y elimina su fichero.
+    Si existe y los datos son diferentes, sobreescribe el fichero, si
+    existe en el registro pero no en los ficheros genera uno nuevo.
+
+    :param id: Identificador único de la habitación."""
+
+    try:
+        habitacion = registry.get(id)
+        habitacion_url = f'ArchivosServidor/Habitacion{id}.json'
+        habitacion_file = open(habitacion_url, 'r')
+        habitacion_json = load(habitacion_file)
+
+        if (habitacion.__dict__ != habitacion_json):
+            habitacion_file.close()
+            with open(habitacion_url, 'w') as habitacion_file:
+                habitacion_file.write(dumps(habitacion.__dict__))
+
+    except KeyError:
+        if path.exists(habitacion_url):
+            remove(habitacion_url)
+
+    except FileNotFoundError:
+        with open(habitacion_url, 'w') as file:
+            file.write(dumps(habitacion.__dict__))
+
+    finally:
+        habitacion_file.close()
+
+
 @post('/')
 def alta_habitacion():
     """ Añade una nueva habitación al Servidor
@@ -98,26 +131,20 @@ def alta_habitacion():
     try:
         habitacion = Room(data['plazas'], data['equipamiento'], data['precio'])
         registry[habitacion.id] = habitacion
+        update(habitacion.id)
+
         response.content_type = "application/json"
         response.body = dumps(habitacion.__dict__)
-
-        file = open("ArchivosServidor/Habitacion" + habitacion.id.__str__() + ".txt", "w")
-        file.write("Habitacion ID: " + habitacion.id.__str__() + "\n")
-        file.write("Numero de plazas: " + habitacion.plazas.__str__() + "\n")
-        file.write("Equipamiento: " + "\n")
-        for line in habitacion.equipamiento:
-            file.write("    " + line + "\n")
-        file.write("Precio: " + habitacion.precio.__str__())
-        file.close()
-
-        return response
 
     except KeyError:
         response.status = 400
         response.body = 'La petición no incluye todos los elementos requeridos.'
 
+    finally:
+        return response
 
-@get('/delete/<id>')
+
+@delete('/delete/<id>')
 def borrar_habitacion(id):
     """
     Selecciona la habitación correspondiente  la variable id
@@ -155,7 +182,7 @@ def borrar_habitacion(id):
             return response
 
 
-@get('/ocupar/<id>')
+@put('/ocupar/<id>')
 def ocupar_habitacion(id):
     """ Ocupa una habitación por su id.
 
@@ -191,7 +218,7 @@ def ocupar_habitacion(id):
             return response
 
 
-@get('/liberar/<id>')
+@put('/liberar/<id>')
 def liberar_habitacion(id):
     """ Libera una habitación por su id.
 
@@ -354,8 +381,11 @@ def add_equipamiento(id):
             if e not in target.equipamiento:
                 target.equipamiento.append(e)
 
+        update(target.id)
+
         response.status = 200
         response.content_type = "application/json"
+
         return dumps(target.__dict__)
 
 
