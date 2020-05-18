@@ -1,7 +1,8 @@
 from bottle import run, request, response, HTTPResponse, get, post, put
 from json import dumps
 from room import Room
-from os import remove
+from os import remove, path, mkdir
+import logging
 
 """ Listado de todas las habitaciones registradas """
 registry = {}
@@ -100,12 +101,12 @@ def alta_habitacion():
         response.content_type = "application/json"
         response.body = dumps(habitacion.__dict__)
 
-        file = open("ArchivosServidor/Habitacion"+habitacion.id.__str__()+".txt", "w")
-        file.write("Habitacion ID: " + habitacion.id.__str__()+"\n")
-        file.write("Numero de plazas: " + habitacion.plazas.__str__()+"\n")
-        file.write("Equipamiento: "+"\n")
+        file = open("ArchivosServidor/Habitacion" + habitacion.id.__str__() + ".txt", "w")
+        file.write("Habitacion ID: " + habitacion.id.__str__() + "\n")
+        file.write("Numero de plazas: " + habitacion.plazas.__str__() + "\n")
+        file.write("Equipamiento: " + "\n")
         for line in habitacion.equipamiento:
-            file.write("    "+line+"\n")
+            file.write("    " + line + "\n")
         file.write("Precio: " + habitacion.precio.__str__())
         file.close()
 
@@ -114,6 +115,7 @@ def alta_habitacion():
     except KeyError:
         response.status = 400
         response.body = 'La petición no incluye todos los elementos requeridos.'
+
 
 @get('/delete/<id>')
 def borrar_habitacion(id):
@@ -142,7 +144,7 @@ def borrar_habitacion(id):
         return response
     else:
         if target.disponible == True:
-            remove("ArchivosServidor/Habitacion"+target.id.__str__()+".txt")
+            remove("ArchivosServidor/Habitacion" + target.id.__str__() + ".txt")
             del registry[target.id]
             response.status = 200
             response.body = f'La habitación {id} ha sido borrada del sistema.'
@@ -151,6 +153,7 @@ def borrar_habitacion(id):
             response.status = 400
             response.body = f'La habitacion {id} esta ocupada.'
             return response
+
 
 @get('/ocupar/<id>')
 def ocupar_habitacion(id):
@@ -187,6 +190,7 @@ def ocupar_habitacion(id):
             response.body = f'La habitacion {id} esta ocupada.'
             return response
 
+
 @get('/liberar/<id>')
 def liberar_habitacion(id):
     """ Libera una habitación por su id.
@@ -221,6 +225,7 @@ def liberar_habitacion(id):
             response.status = 400
             response.body = f'La habitacion {id} esta desocupada.'
             return response
+
 
 @get('/<id>')
 def get_habitacion(id):
@@ -260,6 +265,7 @@ def get_all():
     response.content_type = "application/json"
     return dumps(json_registry)
 
+
 @get('/ocupadas')
 def get_ocupadas():
     """Obtiene un listado de todas las habitaciones ocupadas
@@ -269,6 +275,7 @@ def get_ocupadas():
     response.content_type = "application/json"
     return habitaciones_ocupadas(True)
 
+
 @get('/disponibles')
 def get_disponibles():
     """ Obtiene un listado de todas las habitaciones ocupadas.
@@ -277,6 +284,7 @@ def get_disponibles():
 
     response.content_type = "application/json"
     return habitaciones_disponibles(True)
+
 
 @put('/<id:int>/equipamiento/modificar')
 def modificar_equipamiento(id):
@@ -389,6 +397,7 @@ def eliminar_equipamiento(id):
         response.content_type = "application/json"
         return dumps(target.__dict__)
 
+
 @get('/<id:int>/plazas')
 def get_plazas(id):
     """Devuelve el número de plazas de la habitación
@@ -402,6 +411,7 @@ def get_plazas(id):
         return response
     else:
         return target.plazas
+
 
 @put('/<id:int>/plazas')
 def modificar_plazas(id):
@@ -425,6 +435,7 @@ def modificar_plazas(id):
             response.body = f'No se ha indicado el nuevo número de plazas para habitación {id}.'
             return response
 
+
 @put('/<id:int>/precio')
 def modificar_precio(id):
     """Modifica el precio por noche de la habitación
@@ -447,5 +458,16 @@ def modificar_precio(id):
             response.body = f'No se ha indicado el nuevo precio para la habitación {id}.'
             return response
 
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    try:
+        logging.info('Buscando directorio Archivos Servidor')
+        mkdir('ArchivosServidor')
+        logging.info("Generado directorio ArchivosServidor")
+    except FileExistsError:
+        logging.info('Se ha detectado el directorio.')
+
     run(host='localhost', port=8080)
+
+    logging.info('Aplicación inicializada correctamente.')
