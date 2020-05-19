@@ -1,7 +1,7 @@
 from bottle import run, request, response, delete, get, post, put
 from json import dumps, load
 from room import Room
-from os import remove, path, mkdir
+from os import remove, path, mkdir, listdir
 import logging
 
 """ Listado de todas las habitaciones registradas """
@@ -491,13 +491,29 @@ def modificar_precio(id):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    try:
-        logging.info('Buscando directorio Archivos Servidor')
-        mkdir('ArchivosServidor')
-        logging.info("Generado directorio ArchivosServidor")
-    except FileExistsError:
-        logging.info('Se ha detectado el directorio.')
+    logging.info('Inicializando Servicio')
+    logging.info('\t· Buscando ArchivosServidor/')
 
+    # Detección directorio ArchivosServidor
+    try:
+        mkdir('ArchivosServidor/')
+        logging.info('\t\t No se ha detectado el directorio ArchivosServidor, se ha generado uno nuevo.')
+    except FileExistsError:
+        logging.info('\t\t Directorio ArchivosServidor/ detectado.')
+
+    # Carga de las habitaciones en memoria
+    logging.info('\t · Carga de Habitaciones en memoria')
+    for h in listdir('ArchivosServidor/'):
+        with open(f'ArchivosServidor/{h}','r') as file:
+            json_data = load(file)
+            try:
+                habitacion = Room(json_data['plazas'], json_data['equipamiento'], json_data['precio'], json_data['id'])
+                registry[habitacion.id] = habitacion
+                logging.info(f'\t\t Habitación {habitacion.id} cargada en memoria.')
+            except IndexError:
+                logging.error(f'El id {json_data["id"]} ya está cargado en memoria, la habitación no ha sido cargada.')
+
+    logging.info('Inicialización finalizada.')
     run(host='localhost', port=8080)
 
-    logging.info('Aplicación inicializada correctamente.')
+
