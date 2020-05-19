@@ -134,14 +134,15 @@ def alta_habitacion():
         update(habitacion.id)
 
         response.content_type = "application/json"
-        response.body = dumps(habitacion.__dict__)
+        return dumps(habitacion.__dict__)
 
     except KeyError:
         response.status = 400
-        response.body = 'La petición no incluye todos los elementos requeridos.'
+        return 'Los campos plaza, equipamiento y precio son requeridos.'
 
-    finally:
-        return response
+    except ValueError:
+        response.status = 400
+        return 'Los campos plazas y precio tienen que ser positivos.'
 
 
 @delete('/delete/<id>')
@@ -167,19 +168,18 @@ def borrar_habitacion(id):
     target = seleccionar_habitacion(id, response)
     if target is None:
         response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
+        return f'La habitación {id} no está registrada en el sistema.'
+
     else:
         if target.disponible == True:
             remove("ArchivosServidor/Habitacion" + target.id.__str__() + ".txt")
             del registry[target.id]
             response.status = 200
-            response.body = f'La habitación {id} ha sido borrada del sistema.'
-            return response
+            return f'La habitación {id} ha sido borrada del sistema.'
+
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta ocupada.'
-            return response
+            response.status = 409
+            return f'La habitacion {id} esta ocupada, debe ser liberada previamiente.'
 
 
 @put('/ocupar/<id>')
@@ -204,18 +204,17 @@ def ocupar_habitacion(id):
     target = seleccionar_habitacion(id, response)
     if target is None:
         response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
+        return f'La habitación {id} no está registrada en el sistema.'
+
     else:
         if target.disponible == True:
             target.ocupar()
             response.status = 200
-            response.body = f'La habitación {id} ha sido ocupada.'
-            return response
+            return f'La habitación {id} ha sido ocupada.'
+
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta ocupada.'
-            return response
+            response.status = 409
+            return f'La habitacion {id} esta ocupada.'
 
 
 @put('/liberar/<id>')
@@ -240,18 +239,17 @@ def liberar_habitacion(id):
     target = seleccionar_habitacion(id, response)
     if target is None:
         response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
+        return f'La habitación {id} no está registrada en el sistema.'
+
     else:
         if target.disponible == False:
             target.liberar()
             response.status = 200
-            response.body = f'La habitación {id} ha sido liberada.'
-            return response
+            return f'La habitación {id} ha sido liberada.'
+
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta desocupada.'
-            return response
+            response.status = 409
+            return f'La habitacion {id} esta desocupada.'
 
 
 @get('/<id>')
@@ -273,6 +271,7 @@ def get_habitacion(id):
     if target is None:
         return response
     else:
+        response.content_type = "application/json"
         return dumps(target.__dict__)
 
 
@@ -286,11 +285,15 @@ def get_all():
     ninguna response code 204.
     """
 
-    json_registry = {}
-    for key in registry:
-        json_registry[key] = registry[key].__dict__
-    response.content_type = "application/json"
-    return dumps(json_registry)
+    if len(registry) == 0:
+        response.status = 204
+        return ''
+    else:
+        json_registry = {}
+        for key in registry:
+            json_registry[key] = registry[key].__dict__
+        response.content_type = "application/json"
+        return dumps(json_registry)
 
 
 @get('/ocupadas')
@@ -313,7 +316,18 @@ def get_disponibles():
     return habitaciones_disponibles(True)
 
 
-@put('/<id:int>/equipamiento/modificar')
+@get('/<id:int>/equipamiento')
+def get_equipamiento(id):
+    try:
+        target = registry[id]
+        response.content_type = "application/json"
+        return dumps(target.equipamiento)
+    except KeyError:
+        response.status = 404
+        return f'La habitación {id} no está registrada.'
+
+
+@put('/<id:int>/equipamiento')
 def modificar_equipamiento(id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.

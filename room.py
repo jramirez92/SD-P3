@@ -46,9 +46,18 @@ class Room:
 
         # Inicialiación de los atributos del objeto.
         self.id = Room.assign_id(target_id)
-        self.plazas = plazas
+
+        if int(plazas) < 0:
+            raise ValueError('Plazas debe ser un valor positivo.')
+        else:
+            self.plazas = plazas
+
+        if int(precio) < 0:
+            raise ValueError('Precio debe ser un valor positivo.')
+        else:
+            self.precio = precio
+
         self.equipamiento = equipamiento.copy()
-        self.precio = precio
         self.disponible = True
 
     def ocupar(self):
