@@ -60,30 +60,3 @@ class Room:
         self.equipamiento = equipamiento.copy()
         self.disponible = True
 
-    def ocupar(self):
-        """ Indica que una habitación ya no está disponible
-
-        Comprueba que la habitación esté disponible y modifica su atributo
-        disponible a True
-
-        :raises Exception: Notifica que la habitación ya está ocupada.
-        """
-
-        if not self.disponible:
-            raise Exception(f'La habitación {self.id} no se puede ocupar puesto que ya está asignada a otro cliente.')
-        else:
-            self.disponible = False
-
-    def liberar(self):
-        """ Indica que una habitación vuelve a estar disponible
-
-        Comprueba que la habitación esté ocupada y modifica su atributo
-        disponible a True
-
-        :raises Exception: Notifica que la habitación no está ocupada
-        """
-
-        if self.disponible:
-            raise Exception(f'La habitación {self.id} no está ocupada.')
-        else:
-            self.disponible = True
