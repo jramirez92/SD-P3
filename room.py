@@ -1,11 +1,43 @@
 class Room:
     """ Representa una Habitación """
 
+    current_id = 0  # Variable Estática que indica el último número de indetificación asignado.
+    assigned_ids = [] # Listado de las Variables Asignadas
+    released_ids = [] # Identificaciones que han sido liberadas.
 
-    id = 0  # Variable Estática que indica el último número de indetificación asignado.
+    @staticmethod
+    def assign_id(target_id):
+        """Intenta asignar la ID indicada
 
+        Si la ID objetivo es -1, buscará la id disponible de menor
+        valor. Si es otra buscará si está disponible.
 
-    def __init__(self, plazas, equipamiento, precio):
+        :param target_id: ID objetivo
+        :returns: ID asignada
+        :raises Exception: Si la ID objetivo ya está ocupada."""
+
+        assigned_id = -1
+        if target_id == -1:
+            if len(Room.released_ids) == 0:
+                while True:
+                    Room.current_id = Room.current_id + 1
+                    if Room.current_id not in Room.assigned_ids:
+                        break
+                assigned_id = Room.current_id
+
+            else:
+                assigned_id = Room.released_ids.pop()
+
+        else:
+            if target_id in Room.assigned_ids:
+                raise Exception(f'El id {id} ya está registrado en el sistema.')
+            else:
+                assigned_id = target_id
+
+        Room.assigned_ids.append(assigned_id)
+        return assigned_id
+
+    def __init__(self, plazas, equipamiento, precio, target_id = -1):
         """ Constructor Parametrizado de Room
 
         :param plazas: número máximo de ocupantes que pueden alojarse.
@@ -13,10 +45,8 @@ class Room:
         :param precio: precio por noche
         """
 
-        Room.id = Room.id + 1 # Aumentamos en 1 el último ID
-
         # Inicialiación de los atributos del objeto.
-        self.id = Room.id
+        self.id = Room.assign_id(target_id)
         self.plazas = plazas
         self.equipamiento = equipamiento.copy()
         self.precio = precio
