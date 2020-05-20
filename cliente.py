@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from json import dumps
 import requests
+import json
 
 BASE = "http://localhost:8080/"
 HEADER = {'content-type': 'application/json'}
@@ -37,15 +38,73 @@ def alta_habitacion():
 
     payload = {'plazas': plazas, 'equipamiento': equipamiento, 'precio': precio}
     r = requests.post(BASE, data=dumps(payload), headers=HEADER)
-    print("Habitacion creada.")
+
+    if r.status_code == 200:
+        print("La habitacion fue creada correctamente.")
+    if r.status_code == 400:
+        content = r.json()
+        print(content[f'body'])
+
     iniciar_seleccion()
 
 def borrar_habitacion():
-    print("Opcion seleccionada borrar habitacion")
+    print("Introduce la ID de la habitación que desea borrar:")
+    while True:
+        try:
+            id_habitacion = int(input("> "))
+            if id_habitacion >= 1:
+                break
+            else:
+                print("La ID tiene que ser mayor que 0")
+        except ValueError:
+            print("Debe introducir números.")
+
+    r = requests.get(BASE + 'delete/' + id_habitacion.__str__())
+
+    print(r.content.title().__str__())
+    print("------------------")
+    print(r.text)
+    print("------------------")
+    print(r.status_code)
+
+    print("Habitacion fue borrada correctamente.")
     iniciar_seleccion()
 
 def modificar_habitacion():
-    print("Opcion seleccionada modificar habitacion")
+    print("Introduce la ID de la habitación que desea modificar:")
+    while True:
+        try:
+            id_habitacion = int(input("> "))
+            if id_habitacion >= 1:
+                break
+            else:
+                print("La ID tiene que ser mayor que 0")
+        except ValueError:
+            print("Debe introducir números.")
+
+    print("Elige que opción deseas realizar: ")
+    print("     1. Modificar plazas.")
+    print("     2. Modificar equipamiento.")
+    print("     3. Modificar precio.")
+    print("     4. Salir.")
+    while True:
+        try:
+            opcionseleccionada = int(input("> "))
+            if opcionseleccionada >= 1 and opcionseleccionada <= 4:
+                if opcionseleccionada == 1:
+                    print("1")
+                if opcionseleccionada == 2:
+                    print("2")
+                if opcionseleccionada == 3:
+                    print("3")
+                if opcionseleccionada == 4:
+                    print("Opción seleccionada: Salir.")
+                    break
+                break
+            else:
+                print("Opción no valida")
+        except ValueError:
+            print("Debe introducir números.")
     iniciar_seleccion()
 
 def consultar_habitaciones():
@@ -93,11 +152,11 @@ def iniciar_seleccion():
                 if opcionseleccionada == 7:
                     consultar_habitaciones_desocupadas()
                 if opcionseleccionada == 8:
-                    print("Opcion seleccionada Salir.")
+                    print("Opción seleccionada: Salir.")
                     break
                 break
             else:
-                print("opcion no valida")
+                print("Opción no valida")
         except ValueError:
             print("Debe introducir números.")
 
