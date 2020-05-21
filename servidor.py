@@ -7,31 +7,6 @@ import logging
 """ Listado de todas las habitaciones registradas """
 registry = {}
 
-
-def seleccionar_habitacion(id, response):
-    """
-    Selecciona la habitación correspondiente  la variable id
-
-    Busca una habitación en el registro con esa id, si existe la devuelve, si no
-    existe modifica la response de la función de nivel superior con status
-    404 y un mensaje informativo y devuelve None
-
-    :param id: Identificador único de la habitación.
-    :type id: int
-    :param response: Respuesta que se va a enviar al cliente
-    :type response: Bottle Response
-    :return: Habitación coincidente con ID
-    """
-
-    target = registry.get(int(id))
-    if target is None:
-        response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return None
-    else:
-        return target
-
-
 def habitaciones_ocupadas(serializar=False):
     """ Devuelve la lista de las habitaciones ocupadas
 
@@ -74,7 +49,7 @@ def habitaciones_disponibles(serializar=False):
     return disponibles
 
 
-def update(id):
+def update(target_id):
     """ Hace persistente cualquier modificación en una habitación.
 
     Se busca la habitación por su ID en el registro, si no encuentra
@@ -82,29 +57,23 @@ def update(id):
     Si existe y los datos son diferentes, sobreescribe el fichero, si
     existe en el registro pero no en los ficheros genera uno nuevo.
 
-    :param id: Identificador único de la habitación."""
+    :param target_id: Identificador único de la habitación."""
 
     try:
-        habitacion = registry.get(id)
-        habitacion_url = f'ArchivosServidor/Habitacion{id}.json'
-        habitacion_file = open(habitacion_url, 'r')
-        habitacion_json = load(habitacion_file)
+        target = registry[target_id]
+        target_url = f'ArchivosServidor/Habitacion{target_id}.json'
+        if path.exists(target_url):
+            with open(target_url, 'rw') as file:
+                if load(file) != target.__dict__:
+                    file.write(dumps(target.__dict__))
 
-        if (habitacion.__dict__ != habitacion_json):
-            habitacion_file.close()
-            with open(habitacion_url, 'w') as habitacion_file:
-                habitacion_file.write(dumps(habitacion.__dict__))
+        else:
+            with open(target_url,'w') as file:
+                file.write(dumps(target.__dict__))
 
     except KeyError:
-        if path.exists(habitacion_url):
-            remove(habitacion_url)
-
-    except FileNotFoundError:
-        with open(habitacion_url, 'w') as file:
-            file.write(dumps(habitacion.__dict__))
-
-    finally:
-        habitacion_file.close()
+        logging.error(f'La id no corresponde a ninguna habitación.')
+        raise KeyError
 
 
 @post('/')
@@ -115,37 +84,32 @@ def alta_habitacion():
     plazas, una lista con el equipamiento
     y el precio por noche de la habitacion.
 
-    Parameters
-    ----------
-    plazas: Número de personas que pueden dormir.
-    equipamiento: Lista con los extras de la habitación.
-    precio: Precio de la habitación.
-
-    Response
-    --------
-    Si crea la habitacion response code 200,
+    :returns: Si crea la habitacion response code 200,
     si no response code 400
     """
 
     data = request.json
-    try:
-        habitacion = Room(data['plazas'], data['equipamiento'], data['precio'])
-        registry[habitacion.id] = habitacion
-        update(habitacion.id)
 
+    try:
+        target = Room(data['plazas'], data['equipamiento'], data['precio'])
+        registry[target.id] = target
+        update(target.id)
+
+        response.status = 201
         response.content_type = "application/json"
-        response.body = dumps(habitacion.__dict__)
+        return dumps(target.__dict__)
 
     except KeyError:
         response.status = 400
-        response.body = 'La petición no incluye todos los elementos requeridos.'
+        return 'Los campos plaza, equipamiento y precio son requeridos.'
 
-    finally:
-        return response
+    except ValueError:
+        response.status = 400
+        return 'Los campos plazas y precio tienen que ser positivos.'
 
 
-@delete('/delete/<id>')
-def borrar_habitacion(id):
+@delete('/delete/<target_id>')
+def borrar_habitacion(target_id):
     """
     Selecciona la habitación correspondiente  la variable id
 
@@ -154,36 +118,32 @@ def borrar_habitacion(id):
     modifica la response de la función de nivel superior con status
     404 o 400 respectivamente y un mensaje informativo, devuelve None
 
-    :param id: Identificador único de la habitación.
-    :type id: int
-    :param response: Respuesta que se va a enviar al cliente
-    :type response: Bottle Response
-
-    Response
-    --------
-    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    :param target_id: Identificador único de la habitación.
+    :type target_id: int
+    :returns: Si funciona HTTPResponse 200 si no HTTPResponse 409 o 404.
     """
 
-    target = seleccionar_habitacion(id, response)
-    if target is None:
-        response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
-    else:
-        if target.disponible == True:
-            remove("ArchivosServidor/Habitacion" + target.id.__str__() + ".txt")
-            del registry[target.id]
-            response.status = 200
-            response.body = f'La habitación {id} ha sido borrada del sistema.'
-            return response
+    try:
+        target = registry[target_id]
+        if target.disponible:
+            response.status = 409
+            return f'La habitación {target_id} está ocupada en este momento, debe ser liberada previamente.'
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta ocupada.'
-            return response
+            del registry[target_id]
+            remove(f'ArchivosServidor/Habitacion{target_id}.json')
+            return f'La habitación {target_id} ha sido eliminada del sistema.'
+
+    except KeyError:
+        response.status = 404
+        return f'La habitación {target_id} no está registrada en el sistema.'
+
+    except FileNotFoundError:
+        response.status = 200
+        return f'La habitación {target_id} no se encontraba en los ficheros del sistema, ha sido eliminada del registro.'
 
 
-@put('/ocupar/<id>')
-def ocupar_habitacion(id):
+@put('/<target_id>/ocupar')
+def ocupar_habitacion(target_id):
     """ Ocupa una habitación por su id.
 
     Busca una habitación en el registro con esa id, si existe y esta
@@ -191,35 +151,29 @@ def ocupar_habitacion(id):
     modifica la response de la función de nivel superior con status
     404 o 400 respectivamente y un mensaje informativo, devuelve None
 
-    :param id: Identificador único de la habitación.
+    :param target_id: Identificador único de la habitación.
     :type id: int
-    :param response: Respuesta que se va a enviar al cliente
-    :type response: Bottle Response
 
-    Response
-    --------
-    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    :returns: Si funciona HTTPResponse 200 si no HTTPResponse 409 o 404.
     """
 
-    target = seleccionar_habitacion(id, response)
-    if target is None:
-        response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
-    else:
-        if target.disponible == True:
-            target.ocupar()
-            response.status = 200
-            response.body = f'La habitación {id} ha sido ocupada.'
+    try:
+        target = registry[target_id]
+        if target.disponible:
+            target.disponible = False
+            update(target_id)
             return response
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta ocupada.'
-            return response
+            response.status = 409
+            return f'La habitación {target_id} ya está ocupada'
+
+    except KeyError:
+        response.status = 404
+        return f'La habitación {target_id} no está registrada en el sistema.'
 
 
-@put('/liberar/<id>')
-def liberar_habitacion(id):
+@put('/<target_id>/liberar')
+def liberar_habitacion(target_id):
     """ Libera una habitación por su id.
 
     Busca una habitación en el registro con esa id, si existe y esta
@@ -229,68 +183,57 @@ def liberar_habitacion(id):
 
     :param id: Identificador único de la habitación.
     :type id: int
-    :param response: Respuesta que se va a enviar al cliente
-    :type response: Bottle Response
 
-    Response
-    --------
-    Si funciona HTTPResponse 200 si no HTTPResponse 400 o 404.
+    :returns: Si funciona HTTPResponse 200 si no HTTPResponse 409 o 404.
     """
 
-    target = seleccionar_habitacion(id, response)
-    if target is None:
-        response.status = 404
-        response.body = f'La habitación {id} no está registrada en el sistema.'
-        return response
-    else:
-        if target.disponible == False:
-            target.liberar()
-            response.status = 200
-            response.body = f'La habitación {id} ha sido liberada.'
+    try:
+        target = registry[target_id]
+        if target.disponible:
+            target.disponible = False
+            update(target_id)
             return response
         else:
-            response.status = 400
-            response.body = f'La habitacion {id} esta desocupada.'
-            return response
+            response.status = 409
+            return f'La habitación {target_id} no está ocupada.'
+
+    except KeyError:
+        response.status = 404
+        return f'La habitación {target_id} no está registrada en el sistema.'
 
 
-@get('/<id>')
-def get_habitacion(id):
+@get('/<target_id>')
+def get_habitacion(target_id):
     """ Obtiene una habitación por su id.
 
-    Parameters
-    ----------
-    id: identificador único de la habitación
-
-    Response
-    --------
-    Si existe, objeto por JSON (Response code 200),
-    si no response code 404
+    :param target_id: identificador único de la habitación
+    :returns:Si existe, objeto por JSON (Response code 200), si no response code 404
     """
+    response.content_type = "application/json"
+    try:
+        return dumps(registry[int(target_id)].__dict__)
 
-    target = seleccionar_habitacion(id, response)
-
-    if target is None:
-        return response
-    else:
-        return dumps(target.__dict__)
+    except KeyError:
+        response.status = 404
+        return '{"error_description": "La habitación no está registrada en el sistema."}'
 
 
 @get('/')
 def get_all():
     """ Devuelve un listado con todas las habitaciones.
 
-    Response
-    --------
-    Listado por JSOn con response code 200, si no existe
-    ninguna response code 204.
+    :returns: Listado de todas las habitaciones registradas en el sistema.
     """
 
-    json_registry = {}
-    for key in registry:
-        json_registry[key] = registry[key].__dict__
     response.content_type = "application/json"
-    return dumps(json_registry)
+    if len(registry) == 0:
+        response.status = 204
+        return ''
+    else:
+        json_registry = {}
+        for key in registry:
+            json_registry[key] = registry[key].__dict__
+        return dumps(json_registry)
 
 
 @get('/ocupadas')
@@ -313,8 +256,25 @@ def get_disponibles():
     return habitaciones_disponibles(True)
 
 
-@put('/<id:int>/equipamiento/modificar')
-def modificar_equipamiento(id):
+@get('/<target_id:int>/equipamiento')
+def get_equipamiento(target_id):
+    """ Devuelve el equipamiento de la habitación.
+
+    :param target_id: Identificador único de la habitación.
+
+    :returns: Listado con el equipamiento de la habitación."""
+
+    response.content_type = "application/json"
+    try:
+        return dumps(registry[target_id].equipamiento)
+    except KeyError:
+        response.status = 404
+        return '{"error_description": "La habitación no está registrada en el sistema."}'
+
+
+# noinspection PyBroadException
+@put('/<target_id:int>/equipamiento')
+def modificar_equipamiento(target_id):
     """ Sustituye la lista de equipamiento de una
     habitación por la recibida por JSON.
     
@@ -325,30 +285,29 @@ def modificar_equipamiento(id):
     Si no existe se devuelve una HTTPResponse con
     error 404.
 
-    Parameters
-    ----------
-    id: Identificador único de la habitación
-    equipamiento: Lista con el nuevo equipamiento.
-
-    Response
-    --------
-    Si funciona HTTPResponse 200 con el nuevo objeto
-    por JSON. Si no HTTPResponse 400.
+    :param target_id: Identificador único de la habitación
+    :returns: Si funciona HTTPResponse 200 con el nuevo objeto
+    por JSON. Si no HTTPResponse 404.
     """
 
-    target = seleccionar_habitacion(id, response)
+    try:
+        target = registry[target_id]
+        target.equipamiento = request.json['equipamiento'].copy()
+        update(target_id)
 
-    if target is None:
-        return response
-    else:
-        data = request.json['equipamiento']
-        target.equipamiento = data.copy()
         response.content_type = "application/json"
         return dumps(target.__dict__)
 
+    except KeyError:
+        response.content_type = 404
+    except Exception:
+        response.content_type = 400
+    finally:
+        return response
 
-@put('/<id:int>/equipamiento/add')
-def add_equipamiento(id):
+
+@put('/<target_id:int>/equipamiento/add')
+def add_equipamiento(target_id):
     """ Añade el nuevo o nuevos equipamiento a la 
     habitación.
 
@@ -362,35 +321,29 @@ def add_equipamiento(id):
 
     Parameters:
     -----------
-    id: Identificador único de la habitación.
-    equipamiento: Lista de equipamiento a añadir.
-
-    Response:
-    ---------
-    Si funciona HTTPResponse 200 con el nuevo objeto
+    :param target_id: Identificador único de la habitación.
+    :returns: Si funciona HTTPResponse 200 con el nuevo objeto
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionar_habitacion(id, response)
-
-    if target is None:
-        return response
-    else:
+    try:
+        target = registry[target_id]
         data = request.json['equipamiento']
         for e in data:
             if e not in target.equipamiento:
                 target.equipamiento.append(e)
 
-        update(target.id)
-
+        update(target_id)
         response.status = 200
-        response.content_type = "application/json"
-
         return dumps(target.__dict__)
 
+    except KeyError:
+        response.status = 404
+        return response
 
-@put('/<id:int>/equipamiento/eliminar')
-def eliminar_equipamiento(id):
+
+@put('/<target_id:int>/equipamiento/eliminar')
+def eliminar_equipamiento(target_id):
     """ Elimina el equipamiento contenido en la lista 
     recibida de la habitación.
 
@@ -401,22 +354,13 @@ def eliminar_equipamiento(id):
     Si no existe se devuelve HTTPResponse con error
     404.
 
-    Parameters:
-    -----------
-    id: Identificador único de la habitación.
-    equipamiento: Lista de equipamiento a eliminar.
-
-    Response:
-    ---------
-    Si funciona HTTPResponse 200 con el nuevo objeto
+    :param target_id: Identificador único de la habitación.
+    :returns: Si funciona HTTPResponse 200 con el nuevo objeto
     por JSON. Si no HTTPResponse 400.
     """
 
-    target = seleccionar_habitacion(id, response)
-
-    if target is None:
-        return response
-    else:
+    try:
+        target = registry[target_id]
         data = request.json['equipamiento']
         for e in data:
             try:
@@ -424,69 +368,80 @@ def eliminar_equipamiento(id):
             except ValueError:
                 pass
 
+        update(target_id)
         response.content_type = "application/json"
         return dumps(target.__dict__)
 
+    except KeyError:
+        response.status = 400
+        return response
 
-@get('/<id:int>/plazas')
-def get_plazas(id):
+
+@get('/<target_id:int>/plazas')
+def get_plazas(target_id):
     """Devuelve el número de plazas de la habitación
 
-    :param id: Identificador único de la habitación
+    :param target_id: Identificador único de la habitación
     :returns Número de plazas de la habitación."""
 
-    target = seleccionar_habitacion(id, response)
+    try:
+        return registry[target_id]['plazas']
+    except KeyError:
+        response.status = 404
+        return '{"error_description": "La habitación no está registrada en el sistema."}'
 
-    if target is None:
-        return response
-    else:
-        return target.plazas
 
-
-@put('/<id:int>/plazas')
-def modificar_plazas(id):
+@put('/<target_id:int>/plazas')
+def modificar_plazas(target_id):
     """Modifica el número de plazas de la habitación
 
-    :param id: Identificador único de la habitación.
-    :param plazas: JSON con el nuevo número de plazas
-    :returns Objeto modificado por JSON
+    :param target_id: Identificador único de la habitación.
     """
 
-    target = seleccionar_habitacion(id, response)
-    if target is None:
+    try:
+        registry[target_id]['plazas'] = request.json['plazas']
+        update(target_id)
+        return response;
+    except KeyError:
+        response.status = 404
         return response
-    else:
-        try:
-            target.plazas = request.json['plazas']
-            response.content_type = "application/json"
-            return dumps(target.__dict__)
-        except KeyError:
-            response.status = 400
-            response.body = f'No se ha indicado el nuevo número de plazas para habitación {id}.'
-            return response
 
 
-@put('/<id:int>/precio')
-def modificar_precio(id):
+@get('/<target_id:int>/precio')
+def get_precio(target_id):
+    response.content_type = "application/json"
+    try:
+        return dumps(registry[target_id].precio)
+    except KeyError:
+        response.status = 404
+        return '{"error_description":"La habitación no está registrada en el sistema."}'
+
+
+@put('/<target_id:int>/precio')
+def modificar_precio(target_id):
     """Modifica el precio por noche de la habitación
 
-    :param id: Identificador único de la habitación.
-    :param precio: JSON con el precio nuevo
+    :param target_id: Identificador único de la habitación.
     :returns Objeto modificado por JSON
     """
 
-    target = seleccionar_habitacion(id, response)
-    if target is None:
+    try:
+        registry[target_id]['precio'] = request.json['precio']
+        update(target_id)
+    except KeyError:
+        response.status = 404
         return response
-    else:
-        try:
-            target.precio = request.json['precio']
-            response.content_type = "application/json"
-            return dumps(target.__dict__)
-        except KeyError:
-            response.status = 400
-            response.body = f'No se ha indicado el nuevo precio para la habitación {id}.'
-            return response
+
+
+@get('/<target_id:int>/estado')
+def get_disponibilidad(target_id):
+
+    response.content_type = "application/json"
+    try:
+        return dumps(registry[target_id].disponible)
+    except KeyError:
+        response.status = 404
+        return '{"error_description":"La habitación no está registrada en el sistema."}'
 
 
 if __name__ == "__main__":
