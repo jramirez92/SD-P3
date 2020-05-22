@@ -184,9 +184,6 @@ def modificar_disponibilidad(target_id):
         target = registry[int(target_id)]
         if request.query.disponible in ("true", "True", "TRUE"):
             if not target.disponible:
-                response.status = 409
-                return dumps({"error_description": f"La habitación {target_id} ya está ocupada."})
-            else:
                 target.disponible = True
 
         elif request.query.disponible in ("false", "False", "FALSE"):
@@ -335,14 +332,19 @@ def add_equipamiento(target_id):
 
     try:
         target = registry[int(target_id)]
-        data = request.json['equipamiento']
-        for e in data:
-            if e not in target.equipamiento:
-                target.equipamiento.append(e)
+        if not target.disponible:
+            response.status = 409
+            return dumps({"error_description": f"La habitación {target_id} está ocupada, no se permiten"
+                                               f" modificaciones."})
+        else:
+            data = request.json['equipamiento']
+            for e in data:
+                if e not in target.equipamiento:
+                    target.equipamiento.append(e)
 
-        update(target_id)
-        response.status = 200
-        return dumps(target.__dict__)
+            update(target_id)
+            response.status = 200
+            return dumps(target.__dict__)
 
     except KeyError:
         response.status = 404
@@ -368,20 +370,25 @@ def eliminar_equipamiento(target_id):
 
     try:
         target = registry[int(target_id)]
-        data = request.json.get('equipamiento')
-        response.content_type = "application/json"
-        if data is None:
-            response.status = 400
-            return '{"error_description":"No se ha encontrado el parámetro equipamiento en la petición"}'
+        if not target.disponible:
+            response.status = 409
+            return dumps({"error_description": f"La habitación {target_id} está ocupada, no se permiten"
+                                               f" modificaciones."})
         else:
-            for e in data:
-                try:
-                    target.equipamiento.remove(e)
-                except ValueError:
-                    pass
+            data = request.json.get('equipamiento')
+            response.content_type = "application/json"
+            if data is None:
+                response.status = 400
+                return '{"error_description":"No se ha encontrado el parámetro equipamiento en la petición"}'
+            else:
+                for e in data:
+                    try:
+                        target.equipamiento.remove(e)
+                    except ValueError:
+                        pass
 
-            update(target_id)
-            return dumps(target.__dict__)
+                update(target_id)
+                return dumps(target.__dict__)
 
     except KeyError:
         response.status = 404
@@ -450,9 +457,13 @@ def modificar_precio(target_id):
     """
 
     try:
-        registry[target_id].precio = request.query.precio
-        update(target_id)
-        return registry[target_id].precio
+        if not registry[int(target_id)].disponible:
+            response.status = 409
+            return '{"error_description":"La habitación está ocupada, no se puede modificar."}'
+        else:
+            registry[target_id].precio = request.query.precio
+            update(target_id)
+            return registry[target_id].precio
 
     except KeyError:
         response.status = 404
@@ -477,7 +488,7 @@ if __name__ == "__main__":
         with open(f'ArchivosServidor/{h}', 'r') as file:
             json_data = load(file)
             try:
-                habitacion = Room(json_data['plazas'], json_data['equipamiento'], json_data['precio'], json_data['id'])
+                habitacion = Room(json_data['plazas'], json_data['equipamiento'], json_data['precio'], json_data['disponible'],json_data['id'])
                 registry[habitacion.id] = habitacion
                 logging.info(f'\t\t Habitación {habitacion.id} cargada en memoria.')
             except IndexError:

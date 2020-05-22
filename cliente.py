@@ -35,7 +35,6 @@ def alta_habitacion():
                 print("El precio no puede ser negativo.")
         except ValueError:
             print("Debe introducir números.")
-
     payload = {'plazas': plazas, 'equipamiento': equipamiento, 'precio': precio}
     r = requests.post(BASE, data=dumps(payload), headers=HEADER)
     print("Habitación creada correctamente.")
@@ -52,10 +51,11 @@ def borrar_habitacion():
                 print("La ID tiene que ser mayor que 0")
         except ValueError:
             print("Debe introducir números.")
-
-    r = requests.delete(BASE + 'delete/' + id_habitacion.__str__(), headers=HEADER)
-    print(r.text)
-
+    r = requests.delete(BASE + id_habitacion.__str__(), headers=HEADER)
+    if r.status_code == 409 or r.status_code == 404:
+        print(r.json()['error_description'])
+    else:
+        print("Habitación eliminada correctamente.")
     iniciar_seleccion()
 
 def modificar_habitacion():
@@ -94,10 +94,11 @@ def modificar_habitacion():
                                     print("El numero de plazas tiene que ser mayor que 0")
                             except ValueError:
                                 print("Debe introducir números.")
-                        datos = {'plazas': plazas}
-                        datosjson = json.dumps(datos)
-                        y = requests.put(BASE + id_habitacion.__str__() + '/' + datosjson, headers=HEADER)
-                        print("Status_code: ",y.status_code," Text: ", y.text)
+                        y = requests.put(BASE + id_habitacion.__str__() + '/plazas', params={'plazas': plazas}, headers=HEADER)
+                        if y.status_code == 409:
+                            print(y.json()['error_description'])
+                        else:
+                            print("El valor plazas se cambio correctamente.")
                     if opcionseleccionada == 2:
                         print("Elige que opción deseas realizar: ")
                         print("     1. Reemplazar listado completo de equipamiento.")
@@ -117,15 +118,25 @@ def modificar_habitacion():
                                         else:
                                             equipamiento.append(nuevo_equipamiento)
                                     datos = {'equipamiento': equipamiento}
-                                    equipamientojson = json.dumps(datos)
                                     if opcionmodificar == 1:
-                                        y = requests.put(BASE + id_habitacion.__str__() + '/' + equipamientojson + '/modificar', headers=HEADER)
+                                        y = requests.put(BASE + id_habitacion.__str__() + '/equipamiento', data=dumps(datos), headers=HEADER)
+                                        if y.status_code == 409:
+                                            print(y.json()['error_description'])
+                                        else:
+                                            print("El equipamiento se cambio correctamente")
                                     if opcionmodificar == 2:
-                                        y = requests.put(BASE + id_habitacion.__str__() + '/' + equipamientojson + '/add', headers=HEADER)
+                                        y = requests.put(BASE + id_habitacion.__str__() + '/equipamiento/add', data=dumps(datos), headers=HEADER)
+                                        if y.status_code == 409:
+                                            print(y.json()['error_description'])
+                                        else:
+                                            print("El nuevo equipamiento se añadio correctamente")
                                     if opcionmodificar == 3:
-                                        y = requests.put(BASE + id_habitacion.__str__() + '/' + equipamientojson + '/eliminar', headers=HEADER)
-                                    print("Status_code: ", y.status_code, " Text: ", y.text)
-                                    iniciar_seleccion()
+                                        y = requests.put(BASE + id_habitacion.__str__() + '/equipamiento/eliminar', data=dumps(datos), headers=HEADER)
+                                        if y.status_code == 409:
+                                            print(y.json()['error_description'])
+                                        else:
+                                            print("El equipamiento se elimino correctamente")
+                                    break
                                 else:
                                     if opcionmodificar == 4:
                                         print("Opción seleccionada: Salir.")
@@ -133,6 +144,7 @@ def modificar_habitacion():
                                     else:
                                         print("Opción no valida")
                                     break
+                                break
                             except ValueError:
                                 print("Debe introducir números.")
                     if opcionseleccionada == 3:
@@ -146,16 +158,17 @@ def modificar_habitacion():
                                     print("El precio no puede ser negativo.")
                             except ValueError:
                                 print("Debe introducir números.")
-                        datos = {'precio': precio}
-                        preciojson = json.dumps(datos)
-                        y = requests.put(BASE + id_habitacion.__str__() + '/' + preciojson, headers=HEADER)
-                        print("Status_code: ",y.status_code," Text: ", y.text)
-                    if opcionseleccionada == 4:
-                        if r.json()['disponible'] == True:
-                            y = requests.put(BASE + id_habitacion.__str__() + '/ocupar', headers=HEADER)
+                        y = requests.put(BASE + id_habitacion.__str__() + '/precio', params={'precio': precio}, headers=HEADER)
+                        if y.status_code == 409:
+                            print(y.json()['error_description'])
                         else:
-                            y = requests.put(BASE + id_habitacion.__str__() + '/liberar', headers=HEADER)
-                        print("Status_code: ",y.status_code," Text: ", y.text)
+                            print("El precio se cambio correctamente.")
+                    if opcionseleccionada == 4:
+                        if r.json()['disponible']:
+                            y = requests.put(BASE + id_habitacion.__str__() + '/disponibilidad', params={'disponible': False},headers=HEADER)
+                        else:
+                            y = requests.put(BASE + id_habitacion.__str__() + '/disponibilidad', params={'disponible': True},headers=HEADER)
+                        print("La disponibilidad de la habitación se cambio correctamente.")
                     if opcionseleccionada == 5:
                         print("Opción seleccionada: Salir.")
                         break
