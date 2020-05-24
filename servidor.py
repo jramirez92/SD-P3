@@ -113,7 +113,7 @@ def alta_habitacion():
 @delete('/<target_id:int>')
 def borrar_habitacion(target_id):
     """
-    Selecciona la habitación correspondiente  la variable id
+    Selecciona la habitación correspondiente  con la variable target_id
 
     Busca una habitación en el registro con esa id, si existe y esta
     desocupada la borra. Si no existe o existe pero esta ocupada
@@ -170,8 +170,8 @@ def modificar_disponibilidad(target_id):
 
         .../1/disponibilidad?disponible=true
 
-    Una habitación ya disponible no puede ser ocupada, devuelve error
-    409.
+    Si no existe modifica la response de la función de nivel superior con status
+    404 y un mensaje informativo.
 
     :param target_id: Identificador único de la habitación.
     :type target_id: int
@@ -285,9 +285,12 @@ def modificar_equipamiento(target_id):
     Si no existe se devuelve una HTTPResponse con
     error 404.
 
+    Si existe pero esta ocupada devuelve una HTTPResponse
+    con error 409
+
     :param target_id: Identificador único de la habitación
     :returns: Si funciona HTTPResponse 200 con el nuevo objeto
-    por JSON. Si no HTTPResponse 404.
+    por JSON. Si no HTTPResponse 400, 404 o 409 segun el error.
     """
 
     response.content_type = "application/json"
@@ -323,11 +326,14 @@ def add_equipamiento(target_id):
     Si no existe se devuelve HTTPResponse con error
     404.
 
+    Si existe pero esta ocupada devuelve una HTTPResponse
+    con error 409
+
     Parameters:
     -----------
     :param target_id: Identificador único de la habitación.
     :returns: Si funciona HTTPResponse 200 con el nuevo objeto
-    por JSON. Si no HTTPResponse 400.
+    por JSON. Si no HTTPResponse 400, 404 o 409 segun el error.
     """
 
     try:
@@ -363,9 +369,12 @@ def eliminar_equipamiento(target_id):
     Si no existe se devuelve HTTPResponse con error
     404.
 
+    Si existe pero esta ocupada devuelve una HTTPResponse
+    con error 409
+
     :param target_id: Identificador único de la habitación.
     :returns: Si funciona HTTPResponse 200 con el nuevo objeto
-    por JSON. Si no HTTPResponse 400.
+    por JSON. Si no HTTPResponse 400, 404 o 409 segun el error.
     """
 
     try:
@@ -399,8 +408,12 @@ def eliminar_equipamiento(target_id):
 def get_plazas(target_id):
     """Devuelve el número de plazas de la habitación
 
+    Si no existe se devuelve HTTPResponse con error
+    404.
+
     :param target_id: Identificador único de la habitación
-    :returns Número de plazas de la habitación."""
+    :returns Número de plazas de la habitación.
+    Si no HTTPResponse 404"""
 
     response.content_type = "application/json"
     try:
@@ -418,7 +431,15 @@ def modificar_plazas(target_id):
 
         .../1/plazas?plazas=4
 
+    Si no existe se devuelve HTTPResponse con error
+    404.
+
+    Si existe pero esta ocupada devuelve una HTTPResponse
+    con error 409
+
     :param target_id: Identificador único de la habitación.
+    :returns: Si funciona HTTPResponse 200 con el nuevo objeto
+    por JSON. Si no HTTPResponse 404 o 409 segun el error.
     """
 
     response.content_type = "application/json"
@@ -438,6 +459,14 @@ def modificar_plazas(target_id):
 
 @get('/<target_id:int>/precio')
 def get_precio(target_id):
+    """Devuelve el precio de la habitación
+
+    Si no existe se devuelve HTTPResponse con error
+    404.
+
+    :param target_id: Identificador único de la habitación
+    :returns precio de la habitación. Si no HTTPResponse 404"""
+
     response.content_type = "application/json"
     try:
         return dumps(registry[int(target_id)].precio)
@@ -452,8 +481,15 @@ def modificar_precio(target_id):
 
     El nuevo valor del precio se pasa por QUERY VARIABLE
 
+    Si no existe se devuelve HTTPResponse con error
+    404.
+
+    Si existe pero esta ocupada devuelve una HTTPResponse
+    con error 409
+
     :param target_id: Identificador único de la habitación.
-    :returns Objeto modificado por JSON
+    :returns Si funciona objeto modificado por JSON
+    Si no HTTPResponse 404 o 409 segun el error
     """
 
     try:
