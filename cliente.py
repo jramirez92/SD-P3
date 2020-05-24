@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from json import dumps
 import requests
-import json
 
 BASE = "http://localhost:8080/"
 HEADER = {'content-type': 'application/json'}
@@ -206,13 +205,16 @@ def consultar_habitacion():
         except ValueError:
             print("Debe introducir números.")
     r = requests.get(BASE + id_habitacion.__str__(), headers=HEADER)
-    print("ID de la habitación: ", r.json()['id'])
-    print("     Plazas: ", r.json()['plazas'])
-    print("     Precio: ", r.json()['precio'])
-    print("     Equipamiento: ")
-    for i in r.json()['equipamiento']:
-        print("         ", i)
-    print("     Disponible: ", r.json()['disponible'])
+    if r.status_code == 404:
+        print(r.json()['error_description'])
+    else:
+        print("ID de la habitación: ", r.json()['id'])
+        print("     Plazas: ", r.json()['plazas'])
+        print("     Precio: ", r.json()['precio'])
+        print("     Equipamiento: ")
+        for i in r.json()['equipamiento']:
+            print("         ", i)
+        print("     Disponible: ", r.json()['disponible'])
     iniciar_seleccion()
 
 def consultar_habitaciones_ocupadas():

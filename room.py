@@ -41,7 +41,8 @@ class Room:
 
         :param plazas: número máximo de ocupantes que pueden alojarse.
         :param equipamiento: lista con todos los servicios.
-        :param precio: precio por noche
+        :param precio: precio por noche.
+        :param disponible: estado de la habitación.
         """
 
         # Inicialiación de los atributos del objeto.
