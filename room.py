@@ -36,7 +36,7 @@ class Room:
         Room.assigned_ids.append(assigned_id)
         return assigned_id
 
-    def __init__(self, plazas, equipamiento, precio, disponible = True, target_id=-1):
+    def __init__(self, plazas, equipamiento, precio, disponible=True, target_id=-1):
         """ Constructor Parametrizado de Room
 
         :param plazas: número máximo de ocupantes que pueden alojarse.

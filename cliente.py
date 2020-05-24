@@ -37,7 +37,10 @@ def alta_habitacion():
             print("Debe introducir números.")
     payload = {'plazas': plazas, 'equipamiento': equipamiento, 'precio': precio}
     r = requests.post(BASE, data=dumps(payload), headers=HEADER)
-    print("Habitación creada correctamente.")
+    if r.status_code == 400:
+        print(r.json()['error_description'])
+    else:
+        print("Habitación creada correctamente.")
     iniciar_seleccion()
 
 def borrar_habitacion():

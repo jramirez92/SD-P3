@@ -488,7 +488,7 @@ if __name__ == "__main__":
         with open(f'ArchivosServidor/{h}', 'r') as file:
             json_data = load(file)
             try:
-                habitacion = Room(json_data['plazas'], json_data['equipamiento'], json_data['precio'], json_data['disponible'],json_data['id'])
+                habitacion = Room(json_data['plazas'], json_data['equipamiento'], json_data['precio'], json_data['disponible'], json_data['id'])
                 registry[habitacion.id] = habitacion
                 logging.info(f'\t\t Habitación {habitacion.id} cargada en memoria.')
             except IndexError:
