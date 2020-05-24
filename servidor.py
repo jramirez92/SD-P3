@@ -223,12 +223,12 @@ def get_all():
     """ Devuelve un listado con todas las habitaciones.
 
     :returns: Listado de todas las habitaciones registradas en el sistema.
+    Si no existe ninguna response code 204
     """
 
     response.content_type = "application/json"
     if len(registry) == 0:
         response.status = 204
-        return ''
     else:
         json_registry = {}
         for key in registry:

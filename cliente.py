@@ -183,14 +183,17 @@ def modificar_habitacion():
 
 def consultar_habitaciones():
     r = requests.get(BASE, headers=HEADER)
-    for i in r.json():
-        print("ID de la habitación: ", r.json()[i]['id'])
-        print("     Plazas: ", r.json()[i]['plazas'])
-        print("     Precio: ", r.json()[i]['precio'])
-        print("     Equipamiento: ")
-        for j in r.json()[i]['equipamiento']:
-            print("         ", j)
-        print("     Disponible: ", r.json()[i]['disponible'])
+    if r.status_code == 204:
+        print("No existen habitaciones registradas en el sistema.")
+    else:
+        for i in r.json():
+            print("ID de la habitación: ", r.json()[i]['id'])
+            print("     Plazas: ", r.json()[i]['plazas'])
+            print("     Precio: ", r.json()[i]['precio'])
+            print("     Equipamiento: ")
+            for j in r.json()[i]['equipamiento']:
+                print("         ", j)
+            print("     Disponible: ", r.json()[i]['disponible'])
     iniciar_seleccion()
 
 def consultar_habitacion():
